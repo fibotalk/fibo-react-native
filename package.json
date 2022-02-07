@@ -1,6 +1,6 @@
 {
   "name": "fibo-react-native",
-  "version": "1.0.0",
+  "version": "1.0.0-beta-1",
   "main": "App.js",
   "scripts": {
     "start": "expo start",
