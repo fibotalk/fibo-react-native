@@ -7,7 +7,7 @@
 
 # Usage
 ```javascript
-import Fibotalk from 'fibo-react';
+import Fibotalk from 'fibo-react-native';
 
 let fibo = new Fibotalk('<appid>');
 ```
