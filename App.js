@@ -6,7 +6,7 @@ export default class Fibotalk {
     storage("get", "sample").then(resp => {
       if (resp)
         return console.log("got from storage", resp);
-      storage("set", "sample", Date.now()).then(resp => {
+      storage("set", "sample", Date.now().toString()).then(resp => {
         console.log("set into storage", resp);
       }).catch(error => {
         console.error(error);
