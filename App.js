@@ -4,6 +4,8 @@ const conf = {
   settings: (gid => `__ft__settings__:${gid}`),
   sidLen: 30,
   uidLen: 30,
+  awayTime: 1 * 60 * 60 * 1000, // 1 hrs
+  maxEventsInSession: 500,
 };
 
 export default class Fibotalk {
@@ -63,7 +65,7 @@ export default class Fibotalk {
   /**
    * Get device info and store it.
    */
-  static #initSystemData() {}
+  static #initSystemData() { }
 
   /**
    * Check whether the current running session is changing
@@ -73,11 +75,62 @@ export default class Fibotalk {
    */
   #checkSessionChange() {
     try {
-      
+      if (this.#storage.lastEventTs && (new Date(this.#storage.lastEventTs).getTime() - Date.now() > conf.awayTime))
+        return true;
+      if (this.#storage.eventCount >= conf.maxEventsInSession)
+        return true;
+      if (this.#userChanged())
+        return true;
     } catch (error) {
       return true;
     }
+    return false;
   }
+
+  /** -------------------------------------
+   * compare window.fibotalkSettings with user data in localStorage. 
+   -------------------------------------*/
+  #userChanged() {
+    if (!(this.fibotalkSettings && this.#storage.user))
+      return false;
+    var userId = this.fibotalkSettings.userId;
+    if (this.fibotalkSettings.user)
+      userId = this.fibotalkSettings.user.userId || userId;
+    if (Fibotalk.#isObjOrFunc(userId))
+      return false;
+    if (this.#storage.user.userId && userId && this.#storage.user.userId != userId)
+      return true;
+    try {
+      var oAccountId = this.#storage.user.account.accountId;
+      var nAccountId = window.fibotalkSettings.account.accountId;
+      if (Fibotalk.#isObjOrFunc(nAccountId))
+        return false;
+      if (oAccountId && nAccountId && oAccountId != nAccountId)
+        return true;
+    } catch (e) { }
+    return false;
+  }//userChanged()
+
+  /** -------------------------------------
+   * return true only if its a JSON object
+   * @param {*} obj 
+   -------------------------------------*/
+  static #isObject(obj) {
+    if (Array.isArray(obj))
+      return false;
+    if (typeof obj === "object")
+      return true;
+    return false;
+  }//isObject()
+
+  /** -------------------------------------
+   * Check whether the given item is an object of a function
+   * @param {*} item 
+   -------------------------------------*/
+  static #isObjOrFunc(item) {
+    var validObj = ['function', 'object'];
+    return validObj.includes(typeof item);
+  }//isObjOrFunc()
 
   /**
    * Gen new sess (id, start time).
@@ -95,7 +148,11 @@ export default class Fibotalk {
    * Delete the current data and exit
    */
   #exit() {
-    
+    AsyncStorage.removeItem(conf.settings(this.appid)).then(resp => {
+      console.log("Fibotalk: cleared and exiting....", resp);
+    }).catch(err => {
+      console.error(err);
+    });
   }
 
   /**
