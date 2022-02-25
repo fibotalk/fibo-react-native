@@ -2,14 +2,16 @@
 import { AsyncStorage } from 'react-native';
 const conf = {
   settings: (gid => `__ft__settings__:${gid}`),
+  sidLen: 30,
+  uidLen: 30,
 };
 
 export default class Fibotalk {
 
   static #xhr = new XMLHttpRequest();
-  static #storage = {};
+  #storage = {};
   static #device = {};
-  static fibotalkSettings;
+  fibotalkSettings;
   appid;
 
   /**
@@ -22,8 +24,8 @@ export default class Fibotalk {
     if (!appid)
       return null;
     this.appid = appid;
-    this.#storage("get").then(resp => {
-      Fibotalk.#storage = resp || Fibotalk.#storage;
+    Fibotalk.#store("get").then(resp => {
+      this.#storage = resp || this.#storage;
       this.#init();
     }).catch(error => {
       console.error(error);
@@ -39,28 +41,84 @@ export default class Fibotalk {
    * Get device info and store it.
    */
   #init() {
+    let newSess = false;
+    if (!this.#storage.uid) {
+      this.#storage.uid = Fibotalk.#genId(conf.uidLen);
+      newSess = true;
+    }
+    if (!newSess && !this.#storage.session)
+      newSess = true;
+    if (!newSess && this.#checkSessionChange())
+      newSess = true;
+    if (newSess)
+      return this.#genSession().then(resp => {
+        Fibotalk.#initSystemData();
+      }).catch(err => {
+        console.error("Fibotalk error: ", err);
+        this.#exit();
+      });
+    Fibotalk.#initSystemData();
+  }
 
+  /**
+   * Get device info and store it.
+   */
+  static #initSystemData() {}
+
+  /**
+   * Check whether the current running session is changing
+   */
+  #checkSessionChange() {
+    try {
+      
+    } catch (error) {
+      return true;
+    }
   }
 
   /**
    * Gen new sess (id, start time).
    * Store in #storage and in AsyncStorage.
    */
-  #genSession() {
-
+  async #genSession() {
   }
 
-  async #storage(action, val) {
+  /**
+   * Delete the current data and exit
+   */
+  #exit() {
+    
+  }
+
+  /**
+   * Set the storage based on the type of data
+   * @param {*} action 
+   * @param {*} val 
+   * @returns 
+   */
+  async static #store(action, val) {
     switch (action) {
       case "set":
         return await AsyncStorage.setItem(conf.settings(this.appid), val);
       case "get":
       default:
-        return await AsyncStorage.getItem(conf.settings(this.appid));
+        return await JSON.parse(AsyncStorage.getItem(conf.settings(this.appid)));
     }
   }
 
-  async #request(apiObj) {
+  /** -------------------------------------
+   * generate random ID of length $len
+   * @param {*} len 
+  -------------------------------------*/
+  static #genId(len) {
+    var result = '';
+    var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (var i = len; i > 0; --i)
+      result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
+  }//genId()
+
+  async static #request(apiObj) {
     let xhr = Fibotalk.#xhr;
     return new Promise(function (resolve, reject) {
       if (!(apiObj.url && apiObj.method))
@@ -104,10 +162,11 @@ export default class Fibotalk {
   }
 
   /**
+   * Check for changing session
    * Create an event and send to BE
    * Instantly send events
    * @param {*} event : event name
    * @param {*} dimensions : event dimensions object
    */
-  setEvent(event, dimensions) {}
+  setEvent(event, dimensions) { }
 }
