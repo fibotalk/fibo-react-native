@@ -24,7 +24,7 @@ export default class Fibotalk {
     if (!appid)
       return null;
     this.appid = appid;
-    Fibotalk.#store("get").then(resp => {
+    this.#store("get").then(resp => {
       this.#storage = resp || this.#storage;
       this.#init();
     }).catch(error => {
@@ -81,6 +81,11 @@ export default class Fibotalk {
    * Store in #storage and in AsyncStorage.
    */
   async #genSession() {
+    this.#storage.session = {
+      sess: Fibotalk.#genId(conf.sidLen),
+      ts: new Date(),
+    };
+    return await this.#store("set");
   }
 
   /**
@@ -92,14 +97,13 @@ export default class Fibotalk {
 
   /**
    * Set the storage based on the type of data
-   * @param {*} action 
-   * @param {*} val 
+   * @param {*} action : (set/get)
    * @returns 
    */
-  async static #store(action, val) {
+  async #store(action) {
     switch (action) {
       case "set":
-        return await AsyncStorage.setItem(conf.settings(this.appid), val);
+        return await AsyncStorage.setItem(conf.settings(this.appid), JSON.stringify(this.#storage));
       case "get":
       default:
         return await JSON.parse(AsyncStorage.getItem(conf.settings(this.appid)));
