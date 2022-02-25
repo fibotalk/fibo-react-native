@@ -67,6 +67,9 @@ export default class Fibotalk {
 
   /**
    * Check whether the current running session is changing
+   * 1. Check time from last event.
+   * 2. Check number of events in session.
+   * 3. Check for user change.
    */
   #checkSessionChange() {
     try {
