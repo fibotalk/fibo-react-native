@@ -287,6 +287,7 @@ export default class Fibotalk {
     this.#storage.lastEventTs = event.ts;
 
     console.log("Fibotalk: current_event", JSON.stringify(event));
+    this.#store("set").then(resp => {});
 
     Fibotalk.#request({
       url: conf.apiServer + conf.eventsSync,// events sync API
@@ -302,7 +303,6 @@ export default class Fibotalk {
       }
     }).then(resp => {
       console.log("Fibotalk: ", resp);
-      this.#store("set").then(resp => {});
     }).catch(err => console.log("Fibotalk: ", err));
   }
 }
