@@ -76,7 +76,11 @@ export default class Fibotalk {
     this.#device = this.#device || {};
     this.#device["device#screenHeight"] = height;
     this.#device["device#screenWidth"] = width;
-    // TODO:..........................
+    this.#device["website"] = DeviceInfo.getApplicationName();
+    DeviceInfo.getDeviceName().then((deviceName) => { this.#device["browser"] = deviceName }).catch(err => console.error(err));
+    this.#device["device"] = DeviceInfo.getDeviceType();
+    this.#device["platform"] = DeviceInfo.getSystemName();
+    this.#device["osVersion"] = DeviceInfo.getSystemVersion();
   }
 
   /**
@@ -296,6 +300,9 @@ export default class Fibotalk {
       json: {
         events: [event],
       }
-    }).then(resp => console.log("Fibotalk: ", resp)).catch(err => console.log("Fibotalk: ", err));
+    }).then(resp => {
+      console.log("Fibotalk: ", resp);
+      this.#store("set").then(resp => {});
+    }).catch(err => console.log("Fibotalk: ", err));
   }
 }
