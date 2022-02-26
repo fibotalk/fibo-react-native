@@ -1,11 +1,17 @@
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AsyncStorage } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
+import { useWindowDimensions } from 'react-native';
+
 const conf = {
   settings: (gid => `__ft__settings__:${gid}`),
   sidLen: 30,
   uidLen: 30,
   awayTime: 1 * 60 * 60 * 1000, // 1 hrs
   maxEventsInSession: 500,
+  // apiServer: "https://appsuite.fibotalk.com",
+  apiServer: 'http://cdn.unireply.com/widget',
+  eventsSync: "/apis/open/v1/events/sync",
 };
 
 export default class Fibotalk {
@@ -65,7 +71,13 @@ export default class Fibotalk {
   /**
    * Get device info and store it.
    */
-  static #initSystemData() { }
+  static #initSystemData() {
+    const { height, width } = useWindowDimensions();
+    this.#device = this.#device || {};
+    this.#device["device#screenHeight"] = height;
+    this.#device["device#screenWidth"] = width;
+    // TODO:..........................
+  }
 
   /**
    * Check whether the current running session is changing
@@ -101,8 +113,8 @@ export default class Fibotalk {
     if (this.#storage.user.userId && userId && this.#storage.user.userId != userId)
       return true;
     try {
-      var oAccountId = this.#storage.user.account.accountId;
-      var nAccountId = window.fibotalkSettings.account.accountId;
+      var oAccountId = this.#storage.account.accountId;
+      var nAccountId = this.fibotalkSettings.account.accountId;
       if (Fibotalk.#isObjOrFunc(nAccountId))
         return false;
       if (oAccountId && nAccountId && oAccountId != nAccountId)
@@ -229,8 +241,61 @@ export default class Fibotalk {
    * Check for changing session
    * Create an event and send to BE
    * Instantly send events
-   * @param {*} event : event name
+   * @param {*} name : event name
    * @param {*} dimensions : event dimensions object
    */
-  setEvent(event, dimensions) { }
+  setEvent(name, dimensions) {
+    try {
+      if (!Fibotalk.#isObject(this.fibotalkSettings))
+        delete this.fibotalkSettings;
+      if (this.fibotalkSettings.user) {
+        this.#storage.user = this.#storage.user || {};
+        Object.assign(this.#storage.user, this.fibotalkSettings.user);
+        delete this.fibotalkSettings.user;
+      }
+      if (this.fibotalkSettings.account) {
+        this.#storage.account = this.#storage.account || {};
+        Object.assign(this.#storage.account, this.fibotalkSettings.account);
+        delete this.fibotalkSettings.account;
+      }
+      Object.assign(this.#storage.user, this.fibotalkSettings);
+    } catch (error) { }
+    let event = {
+      event: name,
+      gid: this.appid,
+      uid: this.#storage.uid,
+      sess: this.#storage.session.sess,
+      ts: new Date(),
+      ui: this.#storage.user,
+      account: this.#storage.account,
+      ...Fibotalk.#device,
+    };
+    if (dimensions && Fibotalk.#isObject(dimensions)) {
+      for (let i in dimensions) {
+        event[`dimensions#${i}`] = dimensions[i];
+      }
+    }
+    event["sessDur"] = new Date(event.ts).getTime() - new Date(this.#storage.session.ts).getTime();
+    if (this.#storage.lastEventTs)
+      event["durDiff"] = new Date(event.ts).getTime() - new Date(this.#storage.lastEventTs).getTime();
+    else
+      event["durDiff"] = 0;
+    this.#storage.lastEventTs = event.ts;
+
+    console.log("Fibotalk: current_event", JSON.stringify(event));
+
+    Fibotalk.#request({
+      url: conf.apiServer + conf.eventsSync,// events sync API
+      headers: {
+        auth: this.appid
+      },
+      method: "POST",
+      qs: {
+        gid: this.appid
+      },
+      json: {
+        events: [event],
+      }
+    }).then(resp => console.log("Fibotalk: ", resp)).catch(err => console.log("Fibotalk: ", err));
+  }
 }
