@@ -1,7 +1,5 @@
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AsyncStorage } from 'react-native';
-import DeviceInfo from 'react-native-device-info';
-import { useWindowDimensions } from 'react-native';
+import { AsyncStorage, Dimensions, Platform } from 'react-native';
 
 const conf = {
   settings: (gid => `__ft__settings__:${gid}`),
@@ -60,8 +58,7 @@ export default class Fibotalk {
     if (!newSess && this.checkSessionChange())
       newSess = true;
     if (newSess)
-      return this.genSession().then(resp => {
-        Fibotalk.initSystemData();
+      this.genSession().then(resp => {
       }).catch(err => {
         console.error("Fibotalk error: ", err);
         this.exit();
@@ -73,15 +70,12 @@ export default class Fibotalk {
    * Get device info and store it.
    */
   static initSystemData() {
-    const { height, width } = useWindowDimensions();
-    this.device = this.device || {};
-    this.device["device#screenHeight"] = height;
-    this.device["device#screenWidth"] = width;
-    this.device["website"] = DeviceInfo.getApplicationName();
-    DeviceInfo.getDeviceName().then((deviceName) => { this.device["browser"] = deviceName }).catch(err => console.error(err));
-    this.device["device"] = DeviceInfo.getDeviceType();
-    this.device["platform"] = DeviceInfo.getSystemName();
-    this.device["osVersion"] = DeviceInfo.getSystemVersion();
+    Fibotalk.device = Fibotalk.device || {};
+    Fibotalk.device["device#screenHeight"] = Math.ceil(Dimensions.get('window').height);
+    Fibotalk.device["device#screenWidth"] = Math.ceil(Dimensions.get('window').width);
+    this.device["manufacturer"] = Platform.constants.Manufacturer;
+    this.device["platform"] = Platform.OS;
+    this.device["osVersion"] = Platform.Version;
   }
 
   /**
@@ -183,7 +177,7 @@ export default class Fibotalk {
         return await AsyncStorage.setItem(conf.settings(this.appid), JSON.stringify(this.storage));
       case "get":
       default:
-        return await JSON.parse(AsyncStorage.getItem(conf.settings(this.appid)));
+        return JSON.parse(await AsyncStorage.getItem(conf.settings(this.appid)));
     }
   }
 
@@ -201,11 +195,11 @@ export default class Fibotalk {
 
   static request(apiObj) {
     let xhr = Fibotalk.xhr;
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (!(apiObj.url && apiObj.method))
         return reject("URL not provided");
       let url = apiObj.url;
-      if (apiObj.qs && isObject(apiObj.qs)) {
+      if (apiObj.qs && this.isObject(apiObj.qs)) {
         url += '?';
         for (let i in apiObj.qs)
           url += i + '=' + apiObj.qs[i] + '&';
@@ -229,7 +223,7 @@ export default class Fibotalk {
       };
       xhr.open(apiObj.method, url);
       xhr.setRequestHeader("Content-Type", "application/json");
-      if (apiObj.headers && isObject(apiObj.headers)) {
+      if (apiObj.headers && this.isObject(apiObj.headers)) {
         for (let i in apiObj.headers) {
           if (i && apiObj.headers[i])
             xhr.setRequestHeader(i, apiObj.headers[i]);
@@ -250,6 +244,7 @@ export default class Fibotalk {
    * @param {*} dimensions : event dimensions object
    */
   setEvent(name, dimensions) {
+    this.checkSessionChange();
     try {
       if (!Fibotalk.isObject(this.fibotalkSettings))
         delete this.fibotalkSettings;
@@ -265,6 +260,7 @@ export default class Fibotalk {
       }
       Object.assign(this.storage.user, this.fibotalkSettings);
     } catch (error) { }
+    console.log(this.storage);
     let event = {
       event: name,
       gid: this.appid,
