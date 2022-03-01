@@ -10,6 +10,7 @@ const conf = {
   // apiServer: "https://appsuite.fibotalk.com",
   apiServer: 'http://cdn.unireply.com/widget',
   eventsSync: "/apis/open/v1/events/sync",
+  libVersion: "react-native-1.0",
 };
 
 export default class Fibotalk {
@@ -48,6 +49,7 @@ export default class Fibotalk {
    * Get device info and store it.
    */
   init() {
+    Fibotalk.initSystemData();
     let newSess = false;
     if (!this.storage.uid) {
       this.storage.uid = Fibotalk.genId(conf.uidLen);
@@ -63,7 +65,6 @@ export default class Fibotalk {
         console.error("Fibotalk error: ", err);
         this.exit();
       });
-    Fibotalk.initSystemData();
   }
 
   /**
@@ -86,13 +87,14 @@ export default class Fibotalk {
    */
   checkSessionChange() {
     try {
-      if (this.storage.lastEventTs && (new Date(this.storage.lastEventTs).getTime() - Date.now() > conf.awayTime))
+      if (this.storage.lastEventTs && ((Date.now() - new Date(this.storage.lastEventTs).getTime()) > conf.awayTime))
         return true;
       if (this.storage.eventCount >= conf.maxEventsInSession)
         return true;
       if (this.userChanged())
         return true;
     } catch (error) {
+      console.error(error);
       return true;
     }
     return false;
@@ -152,7 +154,9 @@ export default class Fibotalk {
       sess: Fibotalk.genId(conf.sidLen),
       ts: new Date(),
     };
-    return await this.store("set");
+    this.storage.lastEventTs = new Date();
+    await this.store("set");
+    this.sendEvent("session_start");
   }
 
   /**
@@ -244,7 +248,19 @@ export default class Fibotalk {
    * @param {*} dimensions : event dimensions object
    */
   setEvent(name, dimensions) {
-    this.checkSessionChange();
+    if (this.checkSessionChange()) {
+      this.genSession().then(resp => {
+        this.sendEvent(name, dimensions);
+      }).catch(err => {
+        console.error(err);
+        this.sendEvent(name, dimensions);
+      });
+    } else {
+      this.sendEvent(name, dimensions);
+    }
+  }
+
+  sendEvent(name, dimensions) {
     try {
       if (!Fibotalk.isObject(this.fibotalkSettings))
         delete this.fibotalkSettings;
@@ -260,7 +276,6 @@ export default class Fibotalk {
       }
       Object.assign(this.storage.user, this.fibotalkSettings);
     } catch (error) { }
-    console.log(this.storage);
     let event = {
       event: name,
       gid: this.appid,
@@ -269,6 +284,7 @@ export default class Fibotalk {
       ts: new Date(),
       ui: this.storage.user,
       account: this.storage.account,
+      libVersion: conf.libVersion,
       ...Fibotalk.device,
     };
     if (dimensions && Fibotalk.isObject(dimensions)) {
@@ -299,7 +315,6 @@ export default class Fibotalk {
         events: [event],
       }
     }).then(resp => {
-      console.log("Fibotalk: ", resp);
     }).catch(err => console.log("Fibotalk: ", err));
   }
 }
