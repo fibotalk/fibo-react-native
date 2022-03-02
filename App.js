@@ -73,7 +73,7 @@ export default class Fibotalk {
     Fibotalk.device = Fibotalk.device || {};
     Fibotalk.device["device#screenHeight"] = Math.ceil(Dimensions.get('window').height);
     Fibotalk.device["device#screenWidth"] = Math.ceil(Dimensions.get('window').width);
-    this.device["manufacturer"] = Platform.constants.Manufacturer;
+    this.device["device#manufacturer"] = Platform.constants.Manufacturer;
     this.device["platform"] = Platform.OS;
     this.device["osVersion"] = Platform.Version;
   }
