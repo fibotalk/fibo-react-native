@@ -15,7 +15,6 @@ const conf = {
 
 export default class Fibotalk {
 
-  static xhr = new XMLHttpRequest();
   storage = {};
   static device = {};
   fibotalkSettings;
@@ -91,8 +90,10 @@ export default class Fibotalk {
         return true;
       if (this.storage.eventCount >= conf.maxEventsInSession)
         return true;
-      if (this.userChanged())
+      if (this.userChanged()) {
+        this.storage.uid = Fibotalk.genId(conf.uidLen);
         return true;
+      }
     } catch (error) {
       console.error(error);
       return true;
@@ -198,7 +199,7 @@ export default class Fibotalk {
   }//genId()
 
   static request(apiObj) {
-    let xhr = Fibotalk.xhr;
+    let xhr = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
       if (!(apiObj.url && apiObj.method))
         return reject("URL not provided");
@@ -314,7 +315,6 @@ export default class Fibotalk {
       json: {
         events: [event],
       }
-    }).then(resp => {
-    }).catch(err => console.log("Fibotalk: ", err));
+    }).then(resp => {}).catch(err => console.log("Fibotalk: ", err));
   }
 }
