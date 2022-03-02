@@ -7,8 +7,8 @@ const conf = {
   uidLen: 30,
   awayTime: 1 * 60 * 60 * 1000, // 1 hrs
   maxEventsInSession: 500,
-  // apiServer: "https://appsuite.fibotalk.com",
-  apiServer: 'http://cdn.unireply.com/widget',
+  apiServer: "https://appsuite.fibotalk.com",
+  // apiServer: 'http://cdn.unireply.com/widget',
   eventsSync: "/apis/open/v1/events/sync",
   libVersion: "react-native-1.0",
 };
