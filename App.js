@@ -276,32 +276,34 @@ export default class Fibotalk {
         delete this.fibotalkSettings.account;
       }
       Object.assign(this.storage.user, this.fibotalkSettings);
-    } catch (error) { }
-    let event = {
-      event: name,
-      gid: this.appid,
-      uid: this.storage.uid,
-      sess: this.storage.session.sess,
-      ts: new Date(),
-      ui: this.storage.user,
-      account: this.storage.account,
-      libVersion: conf.libVersion,
-      ...Fibotalk.device,
-    };
-    if (dimensions && Fibotalk.isObject(dimensions)) {
-      for (let i in dimensions) {
-        event[`dimensions#${i}`] = dimensions[i];
+      let event = {
+        event: name,
+        gid: this.appid,
+        uid: this.storage.uid,
+        sess: this.storage.session.sess,
+        ts: new Date(),
+        ui: this.storage.user,
+        account: this.storage.account,
+        libVersion: conf.libVersion,
+        ...Fibotalk.device,
+      };
+      if (dimensions && Fibotalk.isObject(dimensions)) {
+        for (let i in dimensions) {
+          event[`dimensions#${i}`] = dimensions[i];
+        }
       }
-    }
-    event["sessDur"] = new Date(event.ts).getTime() - new Date(this.storage.session.ts).getTime();
-    if (this.storage.lastEventTs)
-      event["durDiff"] = new Date(event.ts).getTime() - new Date(this.storage.lastEventTs).getTime();
-    else
-      event["durDiff"] = 0;
-    this.storage.lastEventTs = event.ts;
+      event["sessDur"] = new Date(event.ts).getTime() - new Date(this.storage.session.ts).getTime();
+      if (this.storage.lastEventTs)
+        event["durDiff"] = new Date(event.ts).getTime() - new Date(this.storage.lastEventTs).getTime();
+      else
+        event["durDiff"] = 0;
+      this.storage.lastEventTs = event.ts;
 
-    console.log("Fibotalk: current_event", JSON.stringify(event));
-    this.store("set").then(resp => { });
+      console.log("Fibotalk: current_event", JSON.stringify(event));
+      this.store("set").then(resp => { });
+    } catch (error) {
+      return;
+    }
 
     Fibotalk.request({
       url: conf.apiServer + conf.eventsSync,// events sync API
@@ -315,6 +317,6 @@ export default class Fibotalk {
       json: {
         events: [event],
       }
-    }).then(resp => {}).catch(err => console.log("Fibotalk: ", err));
+    }).then(resp => { }).catch(err => console.log("Fibotalk: ", err));
   }
 }
