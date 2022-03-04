@@ -262,6 +262,7 @@ export default class Fibotalk {
   }
 
   sendEvent(name, dimensions) {
+    let event;
     try {
       if (!Fibotalk.isObject(this.fibotalkSettings))
         delete this.fibotalkSettings;
@@ -276,7 +277,7 @@ export default class Fibotalk {
         delete this.fibotalkSettings.account;
       }
       Object.assign(this.storage.user, this.fibotalkSettings);
-      let event = {
+      event = {
         event: name,
         gid: this.appid,
         uid: this.storage.uid,
