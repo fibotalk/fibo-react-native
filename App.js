@@ -266,17 +266,21 @@ export default class Fibotalk {
     try {
       if (!Fibotalk.isObject(this.fibotalkSettings))
         delete this.fibotalkSettings;
-      if (this.fibotalkSettings.user) {
-        this.storage.user = this.storage.user || {};
-        Object.assign(this.storage.user, this.fibotalkSettings.user);
-        delete this.fibotalkSettings.user;
+      if (this.fibotalkSettings) {
+        if (this.fibotalkSettings.user) {
+          this.storage.user = this.storage.user || {};
+          Object.assign(this.storage.user, this.fibotalkSettings.user);
+          delete this.fibotalkSettings.user;
+        }
+        if (this.fibotalkSettings.account) {
+          this.storage.account = this.storage.account || {};
+          Object.assign(this.storage.account, this.fibotalkSettings.account);
+          delete this.fibotalkSettings.account;
+        }
+        Object.assign(this.storage.user, this.fibotalkSettings);
       }
-      if (this.fibotalkSettings.account) {
-        this.storage.account = this.storage.account || {};
-        Object.assign(this.storage.account, this.fibotalkSettings.account);
-        delete this.fibotalkSettings.account;
-      }
-      Object.assign(this.storage.user, this.fibotalkSettings);
+    } catch (error) { }
+    try {
       event = {
         event: name,
         gid: this.appid,
@@ -288,23 +292,32 @@ export default class Fibotalk {
         libVersion: conf.libVersion,
         ...Fibotalk.device,
       };
-      if (dimensions && Fibotalk.isObject(dimensions)) {
-        for (let i in dimensions) {
-          event[`dimensions#${i}`] = dimensions[i];
-        }
+    } catch (error) {
+      console.error("Fibotalk: event not accepted / event too early");
+      return;
+    }
+    if (dimensions && Fibotalk.isObject(dimensions)) {
+      for (let i in dimensions) {
+        event[`dimensions#${i}`] = dimensions[i];
       }
+    }
+    try {
       event["sessDur"] = new Date(event.ts).getTime() - new Date(this.storage.session.ts).getTime();
+    } catch (error) {
+      console.error("Fibotalk:", error);
+    }
+    try {
       if (this.storage.lastEventTs)
         event["durDiff"] = new Date(event.ts).getTime() - new Date(this.storage.lastEventTs).getTime();
       else
         event["durDiff"] = 0;
-      this.storage.lastEventTs = event.ts;
-
-      console.log("Fibotalk: current_event", JSON.stringify(event));
-      this.store("set").then(resp => { });
     } catch (error) {
-      return;
+      console.error("Fibotalk:", error);
     }
+    this.storage.lastEventTs = event.ts;
+
+    console.log("Fibotalk: current_event", JSON.stringify(event));
+    this.store("set").then(resp => { }).catch(err => console.error("Fibotalk: storage error", err));
 
     Fibotalk.request({
       url: conf.apiServer + conf.eventsSync,// events sync API
