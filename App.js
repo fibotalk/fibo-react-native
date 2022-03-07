@@ -303,6 +303,7 @@ export default class Fibotalk {
     }
     try {
       event["sessDur"] = new Date(event.ts).getTime() - new Date(this.storage.session.ts).getTime();
+      event["sessDur"] /= 1000;
     } catch (error) {
       console.error("Fibotalk:", error);
     }
