@@ -1,6 +1,8 @@
 {
   "name": "fibo-react-native",
-  "version": "1.1.5",
+  "description": "React native SDK of fibotalk",
+  "keywords": ["fibotalk", "fibo-react-native", "SDK", "fibotalk react native SDK"],
+  "version": "1.1.5a",
   "main": "App.js",
   "scripts": {
     "start": "expo start",
@@ -8,6 +10,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "eject": "expo eject"
+  },
+  "homepage": "https://github.com/fibotalk/fibo-react-native#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fibotalk/fibo-react-native"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.15.17",
